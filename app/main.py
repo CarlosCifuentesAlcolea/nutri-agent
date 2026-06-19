@@ -1,15 +1,17 @@
 from pathlib import Path
 
 from interprete import interpretar_comida
-from parser import cargar_equivalencias, extraer_objetivos
+from parser import cargar_equivalencias, extraer_distribucion_comidas, extraer_objetivos
 from registro import (
     calcular_consumido,
+    calcular_consumido_momento,
     calcular_restante,
     cargar_registro,
     guardar_registro,
     registrar_comida,
     reiniciar_registro,
 )
+from sugerencias import sugerir_comidas
 
 
 EXCEL = Path("data") / "B05 Carlos C.xlsx"
@@ -42,6 +44,48 @@ def mostrar_macros(titulo, macros):
     print(f"- Hidratos: {macros['hc']:.2f}")
     print(f"- Proteina: {macros['proteina']:.2f}")
     print(f"- Grasa: {macros['grasa']:.2f}")
+
+
+def mostrar_sugerencias_comida(restante, equivalencias, preferencia=""):
+    sugerencias = sugerir_comidas(restante, equivalencias, preferencia)
+
+    print("\nSugerencias de comida:")
+
+    if not sugerencias:
+        print("No te quedan equivalencias suficientes para proponer una comida.")
+        return
+
+    for indice, sugerencia in enumerate(sugerencias, start=1):
+        print(f"\nOpcion {indice}:")
+
+        for linea in sugerencia:
+            print(
+                f"- {linea['descripcion']} "
+                f"({linea['equivalencias']:.2f} eq. de {linea['macro_nombre']})"
+            )
+
+        ingredientes = ", ".join(linea["descripcion"] for linea in sugerencia)
+        print(f"Idea de plato: {ingredientes}.")
+
+    print("\nPreparacion: ajusta el plato con estas cantidades y anade verduras libres si encaja con la comida.")
+    print("\nAjustala con verduras libres si quieres mas volumen.")
+
+
+def calcular_restante_momento(distribucion_comidas, registro, momento, restante_dia):
+    objetivo_momento = distribucion_comidas.get(momento)
+
+    if objetivo_momento is None:
+        return restante_dia
+
+    consumido_momento = calcular_consumido_momento(registro, momento)
+
+    return {
+        macro: min(
+            max(objetivo_momento[macro] - consumido_momento[macro], 0),
+            max(restante_dia[macro], 0),
+        )
+        for macro in ("hc", "proteina", "grasa")
+    }
 
 
 def pedir_numero(texto):
@@ -152,12 +196,14 @@ def mostrar_menu():
     print("3. Registrar comida")
     print("4. Ver consumido hoy")
     print("5. Ver restante")
-    print("6. Reiniciar registro de hoy")
-    print("7. Salir")
+    print("6. Sugerir comida")
+    print("7. Reiniciar registro de hoy")
+    print("8. Salir")
 
 
 def main():
     objetivos = extraer_objetivos(EXCEL)
+    distribucion_comidas = extraer_distribucion_comidas(EXCEL)
     equivalencias = cargar_equivalencias(EXCEL)
 
     tipo_dia = preguntar_tipo_dia()
@@ -184,10 +230,22 @@ def main():
         elif opcion == "5":
             mostrar_macros("Restante hoy", calcular_restante(objetivo, registro))
         elif opcion == "6":
+            restante = calcular_restante(objetivo, registro)
+            momento = pedir_momento_dia()
+            restante_momento = calcular_restante_momento(
+                distribucion_comidas,
+                registro,
+                momento,
+                restante,
+            )
+            mostrar_macros(f"Restante para {momento}", restante_momento)
+            preferencia = input("Quieres algo concreto? (opcional): ").strip()
+            mostrar_sugerencias_comida(restante_momento, equivalencias, preferencia)
+        elif opcion == "7":
             registro = reiniciar_registro(tipo_dia)
             guardar_registro(REGISTRO, registro)
             print("\nRegistro de hoy reiniciado.")
-        elif opcion == "7":
+        elif opcion == "8":
             print("\nHasta luego.")
             break
         else:

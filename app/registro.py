@@ -59,6 +59,20 @@ def calcular_consumido(registro):
     return consumido
 
 
+def calcular_consumido_momento(registro, momento):
+    consumido = {macro: 0 for macro in MACROS}
+    momento = momento.lower()
+
+    for comida in registro["comidas"]:
+        if comida.get("momento", "").lower() != momento:
+            continue
+
+        for macro in MACROS:
+            consumido[macro] += float(comida.get(macro, 0))
+
+    return consumido
+
+
 def calcular_restante(objetivo, registro):
     consumido = calcular_consumido(registro)
 

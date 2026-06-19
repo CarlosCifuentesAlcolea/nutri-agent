@@ -65,6 +65,26 @@ def extraer_objetivos(ruta_excel):
 
     return objetivos
 
+
+def extraer_distribucion_comidas(ruta_excel):
+    wb = load_workbook(ruta_excel, data_only=True, read_only=True)
+    ws = wb["Dieta"]
+    distribucion = {}
+
+    for fila in range(13, 20):
+        nombre = ws.cell(fila, 2).value
+
+        if not nombre:
+            continue
+
+        distribucion[str(nombre).strip().lower()] = {
+            "hc": float(ws.cell(fila, 3).value or 0),
+            "proteina": float(ws.cell(fila, 4).value or 0),
+            "grasa": float(ws.cell(fila, 5).value or 0),
+        }
+
+    return distribucion
+
 def buscar_equivalencias(ruta_excel):
     wb = load_workbook(ruta_excel, data_only=True, read_only=True)
 
