@@ -2,6 +2,19 @@ from openpyxl import load_workbook
 import re
 
 
+def numero_a_float(valor):
+    if valor is None:
+        return None
+
+    texto = str(valor).strip().replace(",", ".")
+
+    if "/" in texto:
+        numerador, denominador = texto.split("/", 1)
+        return float(numerador) / float(denominador)
+
+    return float(texto)
+
+
 def _parsear_alimento(texto):
     texto = str(texto).strip()
     patron = r"^(?P<cantidad>\d+(?:[,.]\d+)?(?:/\d+)?)\s*(?P<unidad>g|gr|ml)?\s+(?P<alimento>.+)$"
@@ -98,6 +111,24 @@ def _es_encabezado_equivalencia(texto):
     return any(palabra in texto for palabra in palabras_encabezado)
 
 
+def _parsear_macros_intercambio(intercambio):
+    macros = {"hc": 0.0, "proteina": 0.0, "grasa": 0.0}
+    texto = intercambio.lower()
+    patron = r"(?:(\d+(?:[,.]\d+)?(?:/\d+)?)\s*)?(hidratos?|carbohidratos?|proteinas?|grasa|grasas)"
+
+    for cantidad, macro in re.findall(patron, texto):
+        valor = numero_a_float(cantidad) if cantidad else 1.0
+
+        if macro.startswith(("hidrato", "carbohidrato")):
+            macros["hc"] += valor
+        elif macro.startswith("proteina"):
+            macros["proteina"] += valor
+        elif macro.startswith("grasa"):
+            macros["grasa"] += valor
+
+    return macros
+
+
 def _cargar_equivalencias_columna(ruta_excel, columna, secciones):
     wb = load_workbook(ruta_excel, data_only=True, read_only=True)
     ws = wb["Dieta"]
@@ -119,6 +150,7 @@ def _cargar_equivalencias_columna(ruta_excel, columna, secciones):
             alimento = _parsear_alimento(texto)
             alimento["fila_excel"] = fila
             alimento["intercambio"] = intercambio
+            alimento["macros"] = _parsear_macros_intercambio(intercambio)
 
             equivalencias.append(alimento)
 

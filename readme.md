@@ -26,7 +26,8 @@ La aplicacion preguntara si has entrenado hoy y mostrara el objetivo del dia:
 Tambien permite:
 
 - Consultar equivalencias de hidratos, proteinas y grasas disponibles en el Excel.
-- Registrar comidas durante el dia.
+- Registrar comidas durante el dia escribiendo el alimento consumido.
+- Interpretar cantidades como `220ml cafe con leche` y calcular equivalencias.
 - Ver las equivalencias consumidas.
 - Ver cuanto queda para completar el objetivo diario.
 - Reiniciar el registro del dia.
