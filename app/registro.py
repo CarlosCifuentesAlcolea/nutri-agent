@@ -36,8 +36,9 @@ def guardar_registro(ruta_registro, registro):
         json.dump(registro, archivo, ensure_ascii=False, indent=2)
 
 
-def registrar_comida(registro, descripcion, hc=0, proteina=0, grasa=0):
+def registrar_comida(registro, momento, descripcion, hc=0, proteina=0, grasa=0):
     comida = {
+        "momento": momento,
         "descripcion": descripcion,
         "hc": float(hc),
         "proteina": float(proteina),

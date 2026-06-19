@@ -13,6 +13,7 @@ from registro import (
 
 EXCEL = Path("data") / "B05 Carlos C.xlsx"
 REGISTRO = Path("data") / "registro_diario.json"
+MOMENTOS_DIA = ("desayuno", "almuerzo", "comida", "merienda", "cena", "otro")
 
 
 def preguntar_tipo_dia():
@@ -52,13 +53,35 @@ def pedir_numero(texto):
             print("Introduce un numero valido.")
 
 
+def pedir_momento_dia():
+    print("\nMomento del dia:")
+
+    for indice, momento in enumerate(MOMENTOS_DIA, start=1):
+        print(f"{indice}. {momento}")
+
+    while True:
+        respuesta = input("Elige una opcion: ").strip().lower()
+
+        if respuesta.isdigit():
+            indice = int(respuesta)
+
+            if 1 <= indice <= len(MOMENTOS_DIA):
+                return MOMENTOS_DIA[indice - 1]
+
+        if respuesta in MOMENTOS_DIA:
+            return respuesta
+
+        print("Elige una opcion valida.")
+
+
 def pedir_comida():
+    momento = pedir_momento_dia()
     descripcion = input("Que has comido?: ").strip()
     hc = pedir_numero("Equivalencias de hidratos: ")
     proteina = pedir_numero("Equivalencias de proteina: ")
     grasa = pedir_numero("Equivalencias de grasa: ")
 
-    return descripcion, hc, proteina, grasa
+    return momento, descripcion, hc, proteina, grasa
 
 
 def mostrar_equivalencias(nombre, equivalencias):
@@ -107,8 +130,8 @@ def main():
         elif opcion == "4":
             mostrar_equivalencias("grasas", equivalencias["grasas"])
         elif opcion == "5":
-            descripcion, hc, proteina, grasa = pedir_comida()
-            registrar_comida(registro, descripcion, hc, proteina, grasa)
+            momento, descripcion, hc, proteina, grasa = pedir_comida()
+            registrar_comida(registro, momento, descripcion, hc, proteina, grasa)
             guardar_registro(REGISTRO, registro)
             mostrar_macros("Restante tras registrar la comida", calcular_restante(objetivo, registro))
         elif opcion == "6":
