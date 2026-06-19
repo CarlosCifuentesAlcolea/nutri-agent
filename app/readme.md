@@ -1,5 +1,8 @@
 # Nutri Agent
 
+Aplicacion de consola para leer la dieta de un Excel y mostrar las equivalencias
+diarias segun si el usuario ha entrenado o no.
+
 ## Ejecucion
 
 Para ejecutar la aplicacion, activa primero el entorno virtual:
@@ -13,3 +16,17 @@ Despues inicia el programa principal:
 ```powershell
 python app/main.py
 ```
+
+La aplicacion preguntara si has entrenado hoy y mostrara el objetivo del dia:
+
+- Hidratos
+- Proteina
+- Grasa
+
+Tambien permite:
+
+- Consultar equivalencias de hidratos, proteinas y grasas disponibles en el Excel.
+- Registrar comidas durante el dia.
+- Ver las equivalencias consumidas.
+- Ver cuanto queda para completar el objetivo diario.
+- Reiniciar el registro del dia.

@@ -2,8 +2,31 @@ from openpyxl import load_workbook
 import re
 
 
+def _parsear_alimento(texto):
+    texto = str(texto).strip()
+    patron = r"^(?P<cantidad>\d+(?:[,.]\d+)?(?:/\d+)?)\s*(?P<unidad>g|gr|ml)?\s+(?P<alimento>.+)$"
+    coincidencia = re.match(patron, texto, re.IGNORECASE)
+
+    if not coincidencia:
+        return {
+            "cantidad": None,
+            "unidad": None,
+            "alimento": texto,
+            "descripcion": texto
+        }
+
+    cantidad = coincidencia.group("cantidad").replace(",", ".")
+
+    return {
+        "cantidad": cantidad,
+        "unidad": coincidencia.group("unidad") or "unidad",
+        "alimento": coincidencia.group("alimento").strip(),
+        "descripcion": texto
+    }
+
+
 def extraer_objetivos(ruta_excel):
-    wb = load_workbook(ruta_excel, data_only=True)
+    wb = load_workbook(ruta_excel, data_only=True, read_only=True)
 
     ws = wb["Dieta"]
 
@@ -30,7 +53,7 @@ def extraer_objetivos(ruta_excel):
     return objetivos
 
 def buscar_equivalencias(ruta_excel):
-    wb = load_workbook(ruta_excel, data_only=True)
+    wb = load_workbook(ruta_excel, data_only=True, read_only=True)
 
     ws = wb["Dieta"]
 
@@ -52,7 +75,7 @@ def buscar_equivalencias(ruta_excel):
                     print("GRASA encontrada:", fila, col)
 
 def mostrar_equivalencias(ruta_excel):
-    wb = load_workbook(ruta_excel, data_only=True)
+    wb = load_workbook(ruta_excel, data_only=True, read_only=True)
 
     ws = wb["Dieta"]
 
@@ -68,10 +91,77 @@ def mostrar_equivalencias(ruta_excel):
         if valores:
             print(f"FILA {fila}: {valores}")
 
-def cargar_hidratos(ruta_excel):
-    wb = load_workbook(ruta_excel, data_only=True)
+
+def _es_encabezado_equivalencia(texto):
+    texto = texto.upper()
+    palabras_encabezado = ("HIDRATOS", "PROTE", "GRASA", "CARBOHIDRATOS")
+    return any(palabra in texto for palabra in palabras_encabezado)
+
+
+def _cargar_equivalencias_columna(ruta_excel, columna, secciones):
+    wb = load_workbook(ruta_excel, data_only=True, read_only=True)
     ws = wb["Dieta"]
 
-    for col in range(1, 10):
-        valor = ws.cell(25, col).value
-        print(f"Columna {col}: {valor}")
+    equivalencias = []
+
+    for inicio, fin, intercambio in secciones:
+        for fila in range(inicio, fin + 1):
+            valor = ws.cell(fila, columna).value
+
+            if valor is None:
+                continue
+
+            texto = str(valor).strip()
+
+            if _es_encabezado_equivalencia(texto):
+                continue
+
+            alimento = _parsear_alimento(texto)
+            alimento["fila_excel"] = fila
+            alimento["intercambio"] = intercambio
+
+            equivalencias.append(alimento)
+
+    return equivalencias
+
+
+def cargar_hidratos(ruta_excel):
+    return _cargar_equivalencias_columna(
+        ruta_excel,
+        columna=3,
+        secciones=[
+            (25, 48, "1 hidrato"),
+            (51, 62, "1/2 proteina + 1/2 hidrato"),
+        ],
+    )
+
+
+def cargar_proteinas(ruta_excel):
+    return _cargar_equivalencias_columna(
+        ruta_excel,
+        columna=4,
+        secciones=[
+            (25, 48, "1 proteina"),
+            (51, 73, "1/2 proteina + 1/2 grasa"),
+        ],
+    )
+
+
+def cargar_grasas(ruta_excel):
+    return _cargar_equivalencias_columna(
+        ruta_excel,
+        columna=5,
+        secciones=[
+            (25, 48, "1 grasa"),
+            (51, 65, "0.25 hidratos + 0.25 proteina + 0.5 grasa"),
+            (67, 68, "1/2 hidratos + 1/2 grasa"),
+        ],
+    )
+
+
+def cargar_equivalencias(ruta_excel):
+    return {
+        "hidratos": cargar_hidratos(ruta_excel),
+        "proteinas": cargar_proteinas(ruta_excel),
+        "grasas": cargar_grasas(ruta_excel),
+    }
